@@ -5,11 +5,11 @@ import cvzone
 from ultralytics import YOLO
 import chess
 import logging
-from stockfish import Stockfish
-import pyttsx3
-import queue
-import threading
-speech_queue = queue.Queue()
+
+from config.settings import STOCKFISH_PATH, SPEECH_RATE, SPEECH_VOICE_INDEX
+from modules.camera import Camera
+from modules.engine import ChessEngine
+from modules.speech import SpeechEngine
 
 # ---------------------------------------------------------------------------
 # Suppress YOLO Logging Messages
@@ -27,14 +27,9 @@ DISPLAY_SIZE = (1280, 720)
 BOARD_MARGIN = 100
 CROP_OFFSET = 0  # Pixels to crop from each side after warping||change back to 30
 
-# Initialize Stockfish (update the path as needed)
-stockfish = Stockfish(
-    path="C:/Users/Presision/Downloads/stockfish-windows-x86-64/stockfish/stockfish-windows-x86-64.exe"
-)
-
-stockfishBlack = Stockfish(
-    path="C:/Users/Presision/Downloads/stockfish-windows-x86-64/stockfish/stockfish-windows-x86-64.exe"
-)
+# Initialize Stockfish (path from config/settings.py, overridable via STOCKFISH_PATH env var)
+stockfish = ChessEngine(STOCKFISH_PATH)
+stockfishBlack = ChessEngine(STOCKFISH_PATH)
 
 COLUMNS = "abcdefgh"
 ROWS = "12345678"
@@ -57,13 +52,8 @@ current_fen_candidate = None
 model = YOLO(YOLO_MODEL_PATH)
 names = model.names
 
-cap = cv2.VideoCapture(CAMERA_ID)
-cap.set(3, WIDTH)
-cap.set(4, HEIGHT)
-engine =pyttsx3.init()
-voices = engine.getProperty('voices')
-engine.setProperty('rate',150)
-engine.setProperty('voice',voices[1].id)
+cap = Camera(CAMERA_ID, WIDTH, HEIGHT)
+speaker = SpeechEngine(rate=SPEECH_RATE, voice_index=SPEECH_VOICE_INDEX)
 
 # ---------------------------------------------------------------------------
 # Board Detection Functions
@@ -116,18 +106,6 @@ def reorder(myPoints):
     myPointsNew[1] = myPoints[np.argmin(diff)]  # Top-right
     myPointsNew[2] = myPoints[np.argmax(diff)]  # Bottom-left
     return myPointsNew
-
-def speak(text):
-    speech_queue.put(text)
-
-def workerSpeak():
-    while True:
-        text = speech_queue.get()
-        if text is None:
-            break
-        engine.say(text)
-        engine.runAndWait()
-
 
 # ---------------------------------------------------------------------------
 # Chess Analysis Functions
@@ -300,8 +278,7 @@ def main():
 
     global prev_board_white,prev_board_black, move_history, chess_board_black,current_fen_candidate,chess_board
 
-    speaker_thread = threading.Thread(target=workerSpeak, daemon=True)
-    speaker_thread.start()
+    speaker.start()
 
     while True:
         success, img = cap.read()
@@ -388,11 +365,11 @@ def main():
                     temp_board = chess.Board(stable_fen)
 
                     if temp_board.is_check() or temp_board_black.is_check():
-                        speak("check")
+                        speaker.speak("check")
                         print("check")
 
                     if temp_board.is_checkmate() or temp_board_black.is_checkmate():
-                        speak("mate")
+                        speaker.speak("mate")
                         print("mate")
                         # break
 
