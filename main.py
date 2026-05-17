@@ -1,3 +1,4 @@
+import logging
 import cv2
 import numpy as np
 import cvzone
@@ -14,14 +15,15 @@ from modules.piece_detection import detect_pieces
 from modules.reconstruction import create_fen_from_detections, square_to_pixel
 
 # ---------------------------------------------------------------------------
-# Suppress YOLO Logging Messages
+# Suppress noisy logging
 # ---------------------------------------------------------------------------
+logging.getLogger("comtypes").setLevel(logging.WARNING)
 # logging.getLogger("ultralytics").setLevel(logging.ERROR)
 
 # ---------------------------------------------------------------------------
 # Configuration and Initialization
 # ---------------------------------------------------------------------------
-CAMERA_ID = 1 #checkVidChess.mp4   chessvid2.mp4  testCheck.mp4 ../chessvid2.mp4
+CAMERA_ID = 0  # 0 = встроенная камера, или путь к видео: "chessvid2.mp4"
 WIDTH, HEIGHT = 1280, 720
 CROP_OFFSET = 0  # Pixels to crop from each side after warping||change back to 30
 
