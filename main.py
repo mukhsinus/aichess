@@ -1,10 +1,7 @@
-import math
 import cv2
 import numpy as np
 import cvzone
-from ultralytics import YOLO
 import chess
-import logging
 
 from config.settings import STOCKFISH_PATH, SPEECH_RATE, SPEECH_VOICE_INDEX
 from modules.camera import Camera
@@ -13,6 +10,8 @@ from modules.speech import SpeechEngine
 from modules.board_detection import (
     find_chessboard_corners, warp_image, crop_inner_squares, draw_chess_grid,
 )
+from modules.piece_detection import detect_pieces
+from modules.reconstruction import create_fen_from_detections, square_to_pixel
 
 # ---------------------------------------------------------------------------
 # Suppress YOLO Logging Messages
@@ -24,25 +23,11 @@ from modules.board_detection import (
 # ---------------------------------------------------------------------------
 CAMERA_ID = 1 #checkVidChess.mp4   chessvid2.mp4  testCheck.mp4 ../chessvid2.mp4
 WIDTH, HEIGHT = 1280, 720
-YOLO_MODEL_PATH = "chess.pt"
-DETECTION_CONFIDENCE_THRESHOLD = 0.6
-DISPLAY_SIZE = (1280, 720)
-BOARD_MARGIN = 100
 CROP_OFFSET = 0  # Pixels to crop from each side after warping||change back to 30
 
 # Initialize Stockfish (path from config/settings.py, overridable via STOCKFISH_PATH env var)
 stockfish = ChessEngine(STOCKFISH_PATH)
 stockfishBlack = ChessEngine(STOCKFISH_PATH)
-
-COLUMNS = "abcdefgh"
-ROWS = "12345678"
-
-piece_to_fen = {
-    'white-pawn': 'P', 'white-knight': 'N', 'white-bishop': 'B',
-    'white-rook': 'R', 'white-queen': 'Q', 'white-king': 'K',
-    'black-pawn': 'p', 'black-knight': 'n', 'black-bishop': 'b',
-    'black-rook': 'r', 'black-queen': 'q', 'black-king': 'k'
-}
 
 # Use a chess.Board for debugging; FENs will be built manually.
 chess_board = chess.Board()
@@ -52,127 +37,8 @@ prev_board_black = chess.Board()
 move_history = []
 current_fen_candidate = None
 
-model = YOLO(YOLO_MODEL_PATH)
-names = model.names
-
 cap = Camera(CAMERA_ID, WIDTH, HEIGHT)
 speaker = SpeechEngine(rate=SPEECH_RATE, voice_index=SPEECH_VOICE_INDEX)
-
-# ---------------------------------------------------------------------------
-# Chess Analysis Functions
-# ---------------------------------------------------------------------------
-def get_chess_square(x, y, board_size):
-    """
-    Convert pixel coordinates (x, y) in the warped image to chess notation.
-    Returns (square notation, grid indices).
-    """
-    square_size = board_size // 8
-    grid_x = x // square_size
-    grid_y = y // square_size
-    if not (0 <= grid_x < 8 and 0 <= grid_y < 8):
-        return "Out of Bounds", (-1, -1)
-    col = COLUMNS[grid_x]
-    row = ROWS[7 - grid_y]
-    return f"{col}{row}", (grid_x, grid_y)
-
-
-def create_fen_from_detections(piece_positions, current_turn='w'):
-    """
-    Convert detected pieces (and their grid positions) into a FEN string.
-    The board is built as an 8x8 matrix (row 0 = top).
-    Castling rights are determined dynamically by checking if kings and rooks are in their starting positions.
-    """
-    # Build an empty board (row 0 = top, row 7 = bottom)
-    board = [['' for _ in range(8)] for _ in range(8)]
-    for piece, pos in piece_positions:
-        grid_x, grid_y = pos
-        if 0 <= grid_x < 8 and 0 <= grid_y < 8:
-            board[grid_y][grid_x] = piece_to_fen.get(piece, '')
-
-    # Create FEN rows from the board
-    fen_rows = []
-    for row in board:
-        empty_count = 0
-        row_fen = ''
-        for cell in row:
-            if cell == '':
-                empty_count += 1
-            else:
-                if empty_count > 0:
-                    row_fen += str(empty_count)
-                    empty_count = 0
-                row_fen += cell
-        if empty_count > 0:
-            row_fen += str(empty_count)
-        fen_rows.append(row_fen)
-    position = '/'.join(fen_rows)
-
-    # Dynamically determine castling rights:
-    # For white, the king should be on e1 (grid position (4,7))
-    # For black, the king should be on e8 (grid position (4,0))
-    castling = ""
-    # White castling rights:
-    if board[7][4] == 'K':
-        if board[7][0] == 'R':  # Rook on a1
-            castling += "Q"
-        if board[7][7] == 'R':  # Rook on h1
-            castling += "K"
-    # Black castling rights:
-    if board[0][4] == 'k':
-        if board[0][0] == 'r':  # Rook on a8
-            castling += "q"
-        if board[0][7] == 'r':  # Rook on h8
-            castling += "k"
-    if castling == "":
-        castling = "-"
-
-    return f"{position} {current_turn} {castling} - 0 1"
-
-
-def detect_pieces(img_warped, board_size):
-    """
-    Detect chess pieces on the warped chessboard using YOLO.
-    Returns a list of detected pieces with their grid positions and draws the detections.
-    """
-    detected_pieces = []
-    results = model(img_warped,verbose=False)
-    for r in results:
-        for box in r.boxes:
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
-            cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-            class_id = int(box.cls[0])
-            class_name = names[class_id]
-            conf = float(box.conf[0])
-            if conf < DETECTION_CONFIDENCE_THRESHOLD:
-                continue
-            square, (grid_x, grid_y) = get_chess_square(cx, cy, board_size)
-            if grid_x == -1 or grid_y == -1:
-                continue
-            detected_pieces.append((class_name, (grid_x, grid_y)))
-            cvzone.putTextRect(
-                img_warped,
-                f'{piece_to_fen[class_name]} {square}',
-                (max(0, x1), max(35, y1)),
-                scale=1,
-                thickness=1,
-                colorR=(255, 255, 0),
-                colorT=(0, 0, 0)
-            )
-    return detected_pieces
-
-
-def square_to_pixel(square, board_size):
-    """
-    Convert a square in algebraic notation (e.g., "e4") to pixel coordinates (center)
-    on the warped chessboard image.
-    """
-    square_size = board_size / 8
-    col = COLUMNS.index(square[0])
-    row = 8 - int(square[1])
-    x = int(col * square_size + square_size / 2)
-    y = int(row * square_size + square_size / 2)
-    return (x, y)
-
 
 # ---------------------------------------------------------------------------
 # Main Loop with Automatic Board Detection, Cropping, and Rotation
