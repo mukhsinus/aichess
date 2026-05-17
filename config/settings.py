@@ -9,6 +9,7 @@ Environment variable overrides are supported for machine-specific paths
 (STOCKFISH_PATH, CAMERA_ID) so the code runs without editing on any machine.
 """
 
+import glob
 import os
 
 # ---------------------------------------------------------------------------
@@ -44,10 +45,32 @@ CROP_OFFSET = 0  # pixels to crop from each side after warping
 # ---------------------------------------------------------------------------
 # Stockfish Engine
 # ---------------------------------------------------------------------------
-STOCKFISH_PATH = os.environ.get(
-    "STOCKFISH_PATH",
-    "C:/Users/Presision/Downloads/stockfish-windows-x86-64/stockfish/stockfish-windows-x86-64.exe",
-)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _find_stockfish() -> str:
+    """Return Stockfish path: env var > auto-detected exe in project root > PATH."""
+    env = os.environ.get("STOCKFISH_PATH")
+    if env:
+        return env
+    import subprocess
+    for candidate in sorted(glob.glob(os.path.join(_PROJECT_ROOT, "stockfish*.exe"))):
+        try:
+            p = subprocess.run(
+                [candidate, "quit"],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+            if p.returncode == 0:
+                return candidate
+        except Exception:
+            continue
+    return "stockfish"
+
+
+STOCKFISH_PATH = _find_stockfish()
 STOCKFISH_TOP_MOVES = 3
 
 # ---------------------------------------------------------------------------
