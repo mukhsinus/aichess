@@ -5,7 +5,7 @@ import cvzone
 import chess
 
 from config.settings import STOCKFISH_PATH, SPEECH_RATE, SPEECH_VOICE_INDEX
-from modules.camera import Camera
+from modules.camera import Camera, find_best_camera
 from modules.engine import ChessEngine
 from modules.speech import SpeechEngine
 from modules.board_detection import (
@@ -23,7 +23,6 @@ logging.getLogger("comtypes").setLevel(logging.WARNING)
 # ---------------------------------------------------------------------------
 # Configuration and Initialization
 # ---------------------------------------------------------------------------
-CAMERA_ID = 0  # 0 = встроенная камера, или путь к видео: "chessvid2.mp4"
 WIDTH, HEIGHT = 1280, 720
 CROP_OFFSET = 0  # Pixels to crop from each side after warping||change back to 30
 
@@ -39,7 +38,7 @@ prev_board_black = chess.Board()
 move_history = []
 current_fen_candidate = None
 
-cap = Camera(CAMERA_ID, WIDTH, HEIGHT)
+cap = find_best_camera(WIDTH, HEIGHT)
 speaker = SpeechEngine(rate=SPEECH_RATE, voice_index=SPEECH_VOICE_INDEX)
 
 # ---------------------------------------------------------------------------
