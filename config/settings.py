@@ -12,11 +12,6 @@ Environment variable overrides are supported for machine-specific paths
 import glob
 import os
 
-# ---------------------------------------------------------------------------
-# Camera
-# ---------------------------------------------------------------------------
-# int for device index, or a string file path for video playback.
-# Override with env var CAMERA_ID (set to a number or file path).
 _cam_env = os.environ.get("CAMERA_ID")
 if _cam_env is not None:
     try:
@@ -29,22 +24,13 @@ else:
 FRAME_WIDTH = 1280
 FRAME_HEIGHT = 720
 
-# ---------------------------------------------------------------------------
-# YOLO Model
-# ---------------------------------------------------------------------------
 YOLO_MODEL_PATH = os.environ.get("YOLO_MODEL_PATH", "chess.pt")
 DETECTION_CONFIDENCE_THRESHOLD = 0.6
 
-# ---------------------------------------------------------------------------
-# Display / Warping
-# ---------------------------------------------------------------------------
 DISPLAY_SIZE = (1280, 720)
 BOARD_MARGIN = 100
-CROP_OFFSET = 0  # pixels to crop from each side after warping
+CROP_OFFSET = 0
 
-# ---------------------------------------------------------------------------
-# Stockfish Engine
-# ---------------------------------------------------------------------------
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -73,30 +59,18 @@ def _find_stockfish() -> str:
 STOCKFISH_PATH = _find_stockfish()
 STOCKFISH_TOP_MOVES = 3
 
-# ---------------------------------------------------------------------------
-# FEN Stability
-# ---------------------------------------------------------------------------
-STABILITY_THRESHOLD = 5  # consecutive identical frames before accepting a FEN
+STABILITY_THRESHOLD = 5
 
-# ---------------------------------------------------------------------------
-# Speech Synthesis (pyttsx3)
-# ---------------------------------------------------------------------------
 SPEECH_RATE = 150
-SPEECH_VOICE_INDEX = 1  # index into pyttsx3 voices list
+SPEECH_VOICE_INDEX = 1
 
-# ---------------------------------------------------------------------------
-# Board Detection (contour filtering)
-# ---------------------------------------------------------------------------
 MIN_CONTOUR_AREA = 5000
-CONTOUR_APPROX_EPSILON = 0.02  # fraction of perimeter for approxPolyDP
+CONTOUR_APPROX_EPSILON = 0.02
 CANNY_THRESHOLD_LOW = 10
 CANNY_THRESHOLD_HIGH = 50
 GAUSSIAN_BLUR_KERNEL = (5, 5)
 GAUSSIAN_BLUR_SIGMA = 1
 
-# ---------------------------------------------------------------------------
-# Chess Notation Maps
-# ---------------------------------------------------------------------------
 COLUMNS = "abcdefgh"
 ROWS = "12345678"
 
@@ -107,11 +81,8 @@ PIECE_TO_FEN = {
     "black-rook": "r", "black-queen": "q", "black-king": "k",
 }
 
-# ---------------------------------------------------------------------------
-# Visualization
-# ---------------------------------------------------------------------------
-ARROW_WHITE_COLOR = (255, 0, 0)   # BGR blue
-ARROW_BLACK_COLOR = (0, 0, 255)   # BGR red
+ARROW_WHITE_COLOR = (255, 0, 0)
+ARROW_BLACK_COLOR = (0, 0, 255)
 ARROW_THICKNESS = 2
 ARROW_TIP_LENGTH = 0.3
 GRID_LINE_COLOR = (255, 255, 255)

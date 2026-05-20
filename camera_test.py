@@ -20,9 +20,6 @@ BACKENDS = [
 ]
 
 
-# ------------------------------------------------------------------
-# 1.  Ask Windows what video devices it knows about
-# ------------------------------------------------------------------
 def list_windows_devices():
     print("=" * 60)
     print("WINDOWS VIDEO CAPTURE DEVICES (PnP)")
@@ -63,9 +60,6 @@ def list_windows_devices():
     print()
 
 
-# ------------------------------------------------------------------
-# 2.  Probe every (backend, index) combination
-# ------------------------------------------------------------------
 def probe_all():
     """Return dict  {(backend_name, index): True}  for working combos."""
     found = {}
@@ -99,9 +93,6 @@ def probe_all():
     return found
 
 
-# ------------------------------------------------------------------
-# 3.  Live preview
-# ------------------------------------------------------------------
 def show_camera(backend_flag, index):
     cap = cv2.VideoCapture(index, backend_flag)
     if not cap.isOpened():

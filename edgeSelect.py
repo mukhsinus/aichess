@@ -1,16 +1,13 @@
 import cv2
 import pickle
 
-# Webcam settings
-cam_id = '../chessvid2.mp4'  # Change if needed
+cam_id = '../chessvid2.mp4'
 width, height = 1280, 720
 
-# Open webcam
 cap = cv2.VideoCapture(cam_id)
 cap.set(3, width)
 cap.set(4, height)
 
-# List to store clicked points
 points = []
 
 def mouse_callback(event, x, y, flags, param):
@@ -18,7 +15,6 @@ def mouse_callback(event, x, y, flags, param):
         points.append((x, y))
         print(f"Point {len(points)}: {x}, {y}")
 
-# Display webcam feed and allow user to click four corners
 while True:
     success, img = cap.read()
     if not success:
@@ -30,7 +26,6 @@ while True:
     cv2.imshow("Select Chessboard Corners", img)
     cv2.setMouseCallback("Select Chessboard Corners", mouse_callback)
 
-    # Press 's' to save points
     if cv2.waitKey(1) & 0xFF == ord('s'):
         if len(points) == 4:
             with open("chessboard_corners.p", "wb") as f:

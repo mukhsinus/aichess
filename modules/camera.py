@@ -55,9 +55,6 @@ def find_best_camera(width: int = 1280, height: int = 720) -> cv2.VideoCapture:
 
     preferred = CAMERA_ID
 
-    # ------------------------------------------------------------------
-    # 1. Try the configured preferred camera
-    # ------------------------------------------------------------------
     if isinstance(preferred, int):
         logger.info("Trying preferred camera index %d", preferred)
         if _test_camera(preferred):
@@ -69,9 +66,6 @@ def find_best_camera(width: int = 1280, height: int = 720) -> cv2.VideoCapture:
             return cap
         logger.warning("Preferred camera failed, starting fallback scan")
 
-    # ------------------------------------------------------------------
-    # 2. Fallback: scan all indexes
-    # ------------------------------------------------------------------
     working: list[int] = []
 
     for idx in range(_MAX_CAMERA_INDEX + 1):
