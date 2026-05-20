@@ -1,0 +1,12 @@
+white-pawn
+white-knight
+white-bishop
+white-rook
+white-queen
+white-king
+black-pawn
+black-knight
+black-bishop
+black-rook
+black-queen
+black-king

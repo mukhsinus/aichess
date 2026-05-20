@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import shutil
+from pathlib import Path
 
 from ultralytics import YOLO
 
@@ -33,12 +34,51 @@ from config import (
 RUN_NAME = "chess_detector"
 
 
+def _ensure_absolute_dataset_yaml() -> None:
+    """Resolve a relative ``path:`` in dataset.yaml to absolute.
+
+    Ultralytics resolves relative ``path:`` values against its own
+    ``datasets_dir`` setting, which defaults to a user-level directory
+    (e.g. ``C:/Users/.../datasets/``).  Making the path absolute
+    guarantees the local ``training/dataset/`` directory is used instead.
+    """
+    if not DATASET_YAML.exists():
+        return
+
+    text = DATASET_YAML.read_text()
+    new_lines: list[str] = []
+    changed = False
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("path:"):
+            raw_path = stripped.split(":", 1)[1].strip()
+            try:
+                is_abs = Path(raw_path).is_absolute()
+            except Exception:
+                is_abs = False
+
+            if not is_abs:
+                resolved = (DATASET_YAML.parent / raw_path).resolve()
+                if resolved.is_dir():
+                    new_lines.append(f"path: {resolved.as_posix()}")
+                    changed = True
+                    print(f"Resolved dataset.yaml path → {resolved.as_posix()}")
+                    continue
+
+        new_lines.append(line)
+
+    if changed:
+        DATASET_YAML.write_text("\n".join(new_lines) + "\n")
+
+
 def train(
     epochs: int = EPOCHS,
     batch: int = BATCH_SIZE,
     imgsz: int = IMGSZ,
     resume: bool = False,
 ) -> None:
+    _ensure_absolute_dataset_yaml()
     model = YOLO(YOLO_BASE_MODEL)
 
     results = model.train(

@@ -1,0 +1,68 @@
+body {
+  font-family: monospace; /* Fixed-width font for better alignment */
+  background-color: #f0f0f0; /* Light background */
+  color: #333; /* Dark text color */
+  text-align: center;
+  line-height: 1.6; /* Adjust spacing between rows */
+}
+
+.container {
+  display: flex; /* Enable flexbox layout */
+  flex-wrap: wrap; /* Allow items to wrap into multiple rows*/
+  justify-content: center;
+}
+
+.section {
+  width: fit-content;
+  margin-bottom: 20px;
+  padding: 15px;
+}
+
+h3 {
+  text-align: center;
+}
+
+canvas {
+  max-width: 256px;
+}
+
+#fen {
+  font-size: smaller;
+  user-select: all; /* Select full fen string */
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+  #fen {
+    font-size: xx-small; /* Smaller font size on smaller screens */
+  }
+}
+
+/* fen2htmldiv styling */
+#chessboard {
+  font-family: "Chess", sans-serif;
+  display: grid;
+  width: fit-content;
+  grid-template-columns: repeat(8, 32px);
+  grid-template-rows: repeat(8, 32px);
+  border-collapse: collapse;
+  margin: 20px auto;
+}
+
+.square {
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.light-square {
+  background-color: #f0d9b5; /* Light square color */
+}
+
+.dark-square {
+  background-color: #b58863; /* Dark square color */
+}
